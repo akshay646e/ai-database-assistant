@@ -1,0 +1,97 @@
+"""
+Module 1: Database Connection
+Supports MySQL and PostgreSQL
+"""
+from typing import Dict, Any
+
+
+def get_connection(config: Dict[str, Any]):
+    db_type = config["db_type"].lower()
+
+    if db_type == "mysql":
+        import mysql.connector
+        return mysql.connector.connect(
+            host=config["host"],
+            port=int(config["port"]),
+            user=config["username"],
+            password=config["password"],
+            database=config["database"],
+            connect_timeout=10,
+            autocommit=True,
+        )
+
+    elif db_type == "postgresql":
+        import psycopg2
+        return psycopg2.connect(
+            host=config["host"],
+            port=int(config["port"]),
+            user=config["username"],
+            password=config["password"],
+            dbname=config["database"],
+            connect_timeout=10,
+        )
+
+    else:
+        raise ValueError(f"Unsupported DB type: '{db_type}'. Use 'mysql' or 'postgresql'.")
+
+
+def get_schema(conn, db_type: str) -> Dict[str, Any]:
+    """Extract tables, columns, types, sample values, and row counts"""
+    schema = {}
+    cursor = conn.cursor()
+
+    try:
+        db_type = db_type.lower()
+
+        if db_type == "mysql":
+            cursor.execute("SHOW TABLES")
+            tables = [row[0] for row in cursor.fetchall()]
+
+            for table in tables:
+                cursor.execute(f"DESCRIBE `{table}`")
+                columns = [
+                    {
+                        "name": row[0],
+                        "type": row[1],
+                        "nullable": row[2] == "YES",
+                        "key": row[3],
+                        "default": row[4],
+                    }
+                    for row in cursor.fetchall()
+                ]
+                cursor.execute(f"SELECT COUNT(*) FROM `{table}`")
+                count = cursor.fetchone()[0]
+                schema[table] = {"columns": columns, "row_count": count}
+
+        elif db_type == "postgresql":
+            cursor.execute("""
+                SELECT table_name FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+                ORDER BY table_name
+            """)
+            tables = [row[0] for row in cursor.fetchall()]
+
+            for table in tables:
+                cursor.execute("""
+                    SELECT column_name, data_type, is_nullable, column_default
+                    FROM information_schema.columns
+                    WHERE table_name = %s AND table_schema = 'public'
+                    ORDER BY ordinal_position
+                """, (table,))
+                columns = [
+                    {
+                        "name": row[0],
+                        "type": row[1],
+                        "nullable": row[2] == "YES",
+                        "default": row[3],
+                    }
+                    for row in cursor.fetchall()
+                ]
+                cursor.execute(f'SELECT COUNT(*) FROM "{table}"')
+                count = cursor.fetchone()[0]
+                schema[table] = {"columns": columns, "row_count": count}
+
+    finally:
+        cursor.close()
+
+    return schema
