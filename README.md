@@ -1,4 +1,5 @@
 # 🚀 BAAP AI — Database Analytics Platform
+
 ### The Baap Company · Business Applications and Platforms
 
 AI-powered natural language database analytics. Ask questions in plain English, get SQL + charts + insights instantly.
@@ -10,17 +11,17 @@ AI-powered natural language database analytics. Ask questions in plain English, 
 ```
 baap-ai/
 ├── backend/                         ← Python FastAPI
-│   ├── main.py                      ← All API routes
+│   ├── main.py                      ← API Entrypoint & Routers
+│   ├── config.py                    ← Environment configs
 │   ├── requirements.txt
 │   ├── .env                         ← Add your GEMINI_API_KEY here
-│   └── modules/
-│       ├── db_connection.py         ← Module 1: Connect MySQL/PostgreSQL
-│       ├── nl_to_sql.py             ← Module 2: English → SQL (Gemini)
-│       ├── sql_executor.py          ← Module 3: Run SQL safely
-│       ├── metrics_generator.py     ← Module 4: Stats (avg/min/max)
-│       ├── visualization.py         ← Module 5: Auto chart config
-│       ├── insight_generator.py     ← Module 6: AI insights (Gemini)
-│       └── suggestion_generator.py  ← Module 7: Smart follow-up questions
+│   ├── api/                         ← API Routes & Controllers
+│   ├── core/                        ← LLM Setup & Memory Stubs
+│   ├── ingestion/                   ← Data & DB Loaders
+│   ├── intelligence/                ← Insights, Metrics, Suggestions
+│   ├── processing/                  ← SQL Agent & Execution
+│   ├── utils/                       ← Helper functions
+│   └── visualization/               ← Chart Generators
 │
 └── frontend/                        ← Next.js 14
     ├── package.json
@@ -139,14 +140,15 @@ npm run dev
 
 ## 🔌 API Reference
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/` | Health check |
-| POST | `/api/connect` | Test connection + get schema |
-| POST | `/api/query` | Full pipeline (NL→SQL→results) |
-| POST | `/api/schema` | Get schema only |
+| Method | Endpoint       | Description                    |
+| ------ | -------------- | ------------------------------ |
+| GET    | `/`            | Health check                   |
+| POST   | `/api/connect` | Test connection + get schema   |
+| POST   | `/api/query`   | Full pipeline (NL→SQL→results) |
+| POST   | `/api/schema`  | Get schema only                |
 
 ### Example `/api/query` request:
+
 ```json
 {
   "db_config": {
@@ -174,15 +176,15 @@ npm run dev
 
 ## 🛠 Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 14 + TypeScript |
-| Styling | Tailwind CSS + inline styles |
-| Charts | Chart.js + react-chartjs-2 |
-| Backend | FastAPI (Python) |
-| LLM | Google Gemini 1.5 Flash |
-| MySQL | mysql-connector-python |
-| PostgreSQL | psycopg2-binary |
+| Layer      | Technology                   |
+| ---------- | ---------------------------- |
+| Frontend   | Next.js 14 + TypeScript      |
+| Styling    | Tailwind CSS + inline styles |
+| Charts     | Chart.js + react-chartjs-2   |
+| Backend    | FastAPI (Python)             |
+| LLM        | Google Gemini 1.5 Flash      |
+| MySQL      | mysql-connector-python       |
+| PostgreSQL | psycopg2-binary              |
 
 ---
 
