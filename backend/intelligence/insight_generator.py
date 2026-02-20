@@ -1,11 +1,7 @@
-"""
-Module 6: Insight Generator — uses Gemini to analyze results
-"""
-import os
 import json
 import re
-import google.generativeai as genai
 from typing import List, Dict, Any
+from core.llm import get_llm_model
 
 
 def generate_insights(
@@ -15,16 +11,10 @@ def generate_insights(
     metrics: Dict,
 ) -> List[str]:
 
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        return ["Set GEMINI_API_KEY in .env to enable AI insights."]
-
     if not data:
         return ["No data was returned by this query."]
 
-    genai.configure(api_key=api_key)
-    model_name = os.getenv("MODEL_NAME", "gemini-1.5-flash")
-    model = genai.GenerativeModel(model_name)
+    model = get_llm_model()
 
     kpis = metrics.get("kpis", {})
     numeric_stats = metrics.get("numeric_stats", {})
@@ -56,4 +46,6 @@ JSON ARRAY:"""
         # fallback: split lines
         return [l.strip().lstrip("-•0123456789. ") for l in text.split("\n") if l.strip()][:5]
     except Exception as e:
+        if "429" in str(e) or "exhausted" in str(e).lower():
+            return ["API rate limit reached. Please wait a few moments before requesting more insights."]
         return [f"Could not generate insights: {e}"]

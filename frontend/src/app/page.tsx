@@ -25,6 +25,21 @@ export default function Home() {
     setQueryError('')
   }
 
+  const refreshSchema = async () => {
+    if (!config) return
+    try {
+      const res = await fetch('http://localhost:8001/api/schema', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config),
+      })
+      const json = await res.json()
+      if (res.ok) setSchema(json.schema)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   const handleQuery = async (question: string) => {
     if (!config) return
     setQueryLoading(true)
@@ -63,6 +78,11 @@ export default function Home() {
       queryError={queryError}
       onQuery={handleQuery}
       onDisconnect={handleDisconnect}
+      onRefreshSchema={refreshSchema}
     />
   )
-}
+} 
+
+
+
+

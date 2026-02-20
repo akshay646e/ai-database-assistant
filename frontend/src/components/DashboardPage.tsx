@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef } from 'react'
 import type { DBConfig, QueryResult } from '@/types'
+import FileUpload from './FileUpload'
 import MetricCards from './MetricCards'
 import DataTable from './DataTable'
 import ChartSection from './ChartSection'
@@ -14,10 +15,11 @@ type Props = {
   queryError: string
   onQuery: (q: string) => void
   onDisconnect: () => void
+  onRefreshSchema: () => void
 }
 
 export default function DashboardPage({
-  dbConfig, schema, queryResult, queryLoading, queryError, onQuery, onDisconnect
+  dbConfig, schema, queryResult, queryLoading, queryError, onQuery, onDisconnect, onRefreshSchema
 }: Props) {
   const [question, setQuestion] = useState('')
   const resultsRef = useRef<HTMLDivElement>(null)
@@ -65,6 +67,7 @@ export default function DashboardPage({
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px rgba(34,197,94,0.6)' }} />
             Connected to <strong style={{ color: '#1a1d2e' }}>{dbConfig.database}</strong>
           </div>
+          <FileUpload dbConfig={dbConfig} onUploadSuccess={onRefreshSchema} />
           <button
             onClick={onDisconnect}
             style={{

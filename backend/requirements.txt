@@ -5,3 +5,10 @@ mysql-connector-python==8.4.0
 psycopg2-binary==2.9.9
 google-generativeai==0.7.2
 python-dotenv==1.0.1
+pandas
+openpyxl
+python-docx
+pypdf
+python-multipart
+
+sqlalchemy

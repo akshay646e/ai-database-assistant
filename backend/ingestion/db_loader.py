@@ -1,9 +1,7 @@
 """
-Module 1: Database Connection
-Supports MySQL and PostgreSQL
+DB Loader for connecting to SQL databases and extracting schema
 """
 from typing import Dict, Any
-
 
 def get_connection(config: Dict[str, Any]):
     db_type = config["db_type"].lower()
@@ -64,12 +62,17 @@ def get_schema(conn, db_type: str) -> Dict[str, Any]:
                 schema[table] = {"columns": columns, "row_count": count}
 
         elif db_type == "postgresql":
+            print(f"DEBUG: Fetching schema for PostgreSQL DB: {conn.get_dsn_parameters().get('dbname')} as user {conn.get_dsn_parameters().get('user')}")
             cursor.execute("""
-                SELECT table_name FROM information_schema.tables
-                WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+                SELECT table_name, table_type FROM information_schema.tables
+                WHERE table_schema = 'public'
                 ORDER BY table_name
             """)
-            tables = [row[0] for row in cursor.fetchall()]
+            all_tables = cursor.fetchall()
+            print(f"DEBUG: Found {len(all_tables)} total objects in 'public' schema: {all_tables}")
+            
+            # Keep both Base Tables and Views
+            tables = [row[0] for row in all_tables if row[1] in ('BASE TABLE', 'VIEW')]
 
             for table in tables:
                 cursor.execute("""

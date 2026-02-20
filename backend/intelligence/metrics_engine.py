@@ -1,7 +1,3 @@
-"""
-Module 4: Metrics Generator
-Computes statistical KPIs from query results
-"""
 from typing import List, Dict, Any
 from collections import Counter
 

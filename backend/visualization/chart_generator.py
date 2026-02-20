@@ -1,16 +1,10 @@
-"""
-Module 5: Visualization Engine
-Picks best chart type and generates config for Chart.js (frontend)
-"""
 from typing import List, Dict, Any
-
 
 COLORS = [
     "#6c47ff", "#22c55e", "#3b82f6", "#f97316",
     "#a855f7", "#14b8a6", "#f43f5e", "#eab308",
     "#0ea5e9", "#8b5cf6", "#ec4899", "#84cc16",
 ]
-
 
 def generate_chart_config(columns: List[str], data: List[Dict], question: str) -> Dict[str, Any]:
     if not data or not columns:

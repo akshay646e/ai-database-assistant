@@ -1,11 +1,7 @@
-"""
-Module 7: Smart Suggestion Generator — follow-up questions via Gemini
-"""
-import os
 import json
 import re
-import google.generativeai as genai
 from typing import List, Dict, Any
+from core.llm import get_llm_model
 
 
 def generate_suggestions(
@@ -14,13 +10,10 @@ def generate_suggestions(
     data: List[Dict],
 ) -> List[str]:
 
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
+    try:
+        model = get_llm_model()
+    except ValueError:
         return []
-
-    genai.configure(api_key=api_key)
-    model_name = os.getenv("MODEL_NAME", "gemini-1.5-flash")
-    model = genai.GenerativeModel(model_name)
 
     tables = ", ".join(schema.keys())
     sample = json.dumps(data[:5], default=str)
@@ -48,5 +41,7 @@ JSON ARRAY:"""
         if match:
             return json.loads(match.group())[:5]
         return [l.strip().lstrip("-•0123456789. ") for l in text.split("\n") if l.strip()][:5]
-    except Exception:
+    except Exception as e:
+        if "429" in str(e) or "exhausted" in str(e).lower():
+            return ["API rate limit reached. Suggestion generation skipped."]
         return []
