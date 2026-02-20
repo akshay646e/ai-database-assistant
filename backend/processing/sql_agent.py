@@ -17,7 +17,13 @@ def natural_language_to_sql(question: str, schema: Dict[str, Any], db_type: str 
 
     model = get_llm_model()
 
-    dialect = "MySQL" if db_type.lower() == "mysql" else "PostgreSQL"
+    if db_type.lower() == "mysql":
+        dialect = "MySQL"
+    elif db_type.lower() == "sqlite":
+        dialect = "SQLite"
+    else:
+        dialect = "PostgreSQL"
+    
     schema_text = _schema_to_text(schema, dialect)
 
     prompt = f"""You are an expert {dialect} SQL query generator.

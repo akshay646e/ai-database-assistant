@@ -71,6 +71,15 @@ def upload_file(
                     content_text LONGTEXT
                 );
                 """
+            elif db_config['db_type'] == 'sqlite':
+                create_table_sql = """
+                CREATE TABLE IF NOT EXISTS uploaded_documents (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    filename VARCHAR(255),
+                    upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    content_text TEXT
+                );
+                """
             else:
                 create_table_sql = """
                 CREATE TABLE IF NOT EXISTS uploaded_documents (

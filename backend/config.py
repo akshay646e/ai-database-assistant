@@ -17,5 +17,7 @@ def get_db_url(db_config: dict) -> str:
 
     if db_config['db_type'] == 'mysql':
         return f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{db_name}"
+    elif db_config['db_type'] == 'sqlite':
+        return f"sqlite:///{db_name}.db"
     else:
         return f"postgresql://{user}:{password}@{host}:{port}/{db_name}"

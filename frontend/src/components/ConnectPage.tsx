@@ -71,17 +71,21 @@ export default function ConnectPage({ onConnected }: Props) {
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (!form.database.trim()) {
-      setError('Database Name is required to upload a file into it');
-      return;
-    }
+    const effectiveConfig: DBConfig = form.database.trim() ? form : {
+      db_type: 'sqlite',
+      host: 'localhost',
+      port: 0,
+      username: '',
+      password: '',
+      database: 'baap_quick_upload',
+    };
 
     setUploading(true)
     setError('')
 
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('db_config', JSON.stringify(form))
+    formData.append('db_config', JSON.stringify(effectiveConfig))
 
     try {
       const res = await fetch('http://localhost:8001/api/upload', {
@@ -91,16 +95,21 @@ export default function ConnectPage({ onConnected }: Props) {
       const json = await res.json()
       if (!res.ok) throw new Error(json.detail || 'Upload failed')
 
+      setError(`✅ Successfully uploaded ${file.name}! Redirecting to analytics...`)
+      
+      // Allow user to read success message
+      await new Promise(r => setTimeout(r, 1500));
+
       // After upload, connect to the DB to fetch the updated schema
       const schemaRes = await fetch('http://localhost:8001/api/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(effectiveConfig),
       })
       const schemaJson = await schemaRes.json()
       if (!schemaRes.ok) throw new Error(schemaJson.detail || 'Connection failed after upload')
       
-      onConnected(form, schemaJson.schema)
+      onConnected(effectiveConfig, schemaJson.schema)
     } catch (err: any) {
       if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
         setBackendStatus('down')
@@ -221,12 +230,12 @@ export default function ConnectPage({ onConnected }: Props) {
               placeholder="Enter password" style={inp} />
           </div>
 
-          {/* Error message */}
+          {/* Error / Success message */}
           {error && (
             <div style={{
-              padding: '12px 14px', background: '#fef2f2',
-              border: '1px solid #fca5a5', borderRadius: 10,
-              color: '#dc2626', fontSize: 13, marginBottom: 16,
+              padding: '12px 14px', background: error.startsWith('✅') ? '#f0fdf4' : '#fef2f2',
+              border: `1px solid ${error.startsWith('✅') ? '#86efac' : '#fca5a5'}`, borderRadius: 10,
+              color: error.startsWith('✅') ? '#16a34a' : '#dc2626', fontSize: 13, marginBottom: 16,
               whiteSpace: 'pre-line', lineHeight: 1.8,
               fontFamily: error.includes('cd backend') ? "'JetBrains Mono', monospace" : 'inherit',
             }}>
