@@ -1,12 +1,16 @@
 from fastapi import APIRouter, HTTPException, File, UploadFile, Form
 from pydantic import BaseModel
 import json
+import logging
 
 from ingestion.db_loader import get_connection, get_schema
 from ingestion.csv_loader import load_csv_excel
 from ingestion.pdf_loader import load_pdf
 from ingestion.docx_loader import load_docx
 from utils.file_handler import sanitize_table_name
+import rag.rag_engine as rag_engine
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -36,29 +40,36 @@ def connect_database(config: DBConfig):
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/upload")
-def upload_file(
+async def upload_file(
     file: UploadFile = File(...),
     db_config_str: str = Form(..., alias="db_config")
 ):
-    """Upload a file (CSV/Excel/PDF/Docx) and ingest into DB"""
+    """Upload a file (CSV/Excel/PDF/Docx) and ingest into DB + RAG vector store"""
     try:
         db_config = json.loads(db_config_str)
         filename = file.filename
-        
+
+        # Read file bytes once for reuse across DB + RAG pipeline
+        file_bytes = await file.read()
+
         # Connect to DB
         conn = get_connection(db_config)
         
         if filename.endswith(('.csv', '.xlsx', '.xls')):
+            import io
+            file.file = io.BytesIO(file_bytes)  # rewind for csv_loader
             result = load_csv_excel(file, db_config, conn)
             conn.close()
             return result
             
         elif filename.endswith(('.pdf', '.docx')):
+            import io
+            file.file = io.BytesIO(file_bytes)  # rewind for loaders
             if filename.endswith('.pdf'):
                 text_content = load_pdf(file)
             else:
                 text_content = load_docx(file)
-                
+
             cursor = conn.cursor()
             
             # Create table if not exists
@@ -100,8 +111,26 @@ def upload_file(
             cursor.execute(insert_sql, (filename, text_content))
             conn.commit()
             conn.close()
-            
-            return {"status": "success", "type": "unstructured", "table": "uploaded_documents", "length": len(text_content)}
+
+            # ── RAG Indexing (non-blocking — failure won't break upload) ──
+            rag_indexed = False
+            rag_chunks = 0
+            try:
+                rag_result = rag_engine.index_document(filename, file_bytes)
+                rag_indexed = True
+                rag_chunks = rag_result.get("chunks_added", 0)
+                logger.info("RAG indexed '%s': %d chunks", filename, rag_chunks)
+            except Exception as rag_err:
+                logger.warning("RAG indexing failed for '%s': %s", filename, rag_err)
+
+            return {
+                "status": "success",
+                "type": "unstructured",
+                "table": "uploaded_documents",
+                "length": len(text_content),
+                "rag_indexed": rag_indexed,
+                "rag_chunks": rag_chunks,
+            }
 
         else:
             conn.close()

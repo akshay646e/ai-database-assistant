@@ -19,7 +19,7 @@ export default function ConnectPage({ onConnected }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [backendStatus, setBackendStatus] = useState<'unknown' | 'ok' | 'down'>('unknown')
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
 
@@ -33,7 +33,7 @@ export default function ConnectPage({ onConnected }: Props) {
 
   const checkBackend = async () => {
     try {
-      const res = await fetch('http://localhost:8001/')
+      const res = await fetch('http://localhost:8000/')
       if (res.ok) { setBackendStatus('ok'); setError('') }
       else setBackendStatus('down')
     } catch {
@@ -47,7 +47,7 @@ export default function ConnectPage({ onConnected }: Props) {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('http://localhost:8001/api/connect', {
+      const res = await fetch('http://localhost:8000/api/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -58,7 +58,7 @@ export default function ConnectPage({ onConnected }: Props) {
     } catch (e: any) {
       if (e.message === 'Failed to fetch' || e.name === 'TypeError') {
         setBackendStatus('down')
-        setError('BACKEND NOT RUNNING!\n\nOpen a NEW terminal window and run these commands one by one:\n\n  1.  cd backend\n  2.  venv\\Scripts\\activate\n  3.  uvicorn main:app --reload --port 8001\n\nKeep that terminal open, then try connecting again.')
+        setError('BACKEND NOT RUNNING!\n\nOpen a NEW terminal window and run these commands one by one:\n\n  1.  cd backend\n  2.  uvicorn main:app --reload\n\nKeep that terminal open, then try connecting again.')
       } else {
         setError(e.message)
       }
@@ -88,7 +88,7 @@ export default function ConnectPage({ onConnected }: Props) {
     formData.append('db_config', JSON.stringify(effectiveConfig))
 
     try {
-      const res = await fetch('http://localhost:8001/api/upload', {
+      const res = await fetch('http://localhost:8000/api/upload', {
         method: 'POST',
         body: formData,
       })
@@ -96,24 +96,24 @@ export default function ConnectPage({ onConnected }: Props) {
       if (!res.ok) throw new Error(json.detail || 'Upload failed')
 
       setError(`✅ Successfully uploaded ${file.name}! Redirecting to analytics...`)
-      
+
       // Allow user to read success message
       await new Promise(r => setTimeout(r, 1500));
 
       // After upload, connect to the DB to fetch the updated schema
-      const schemaRes = await fetch('http://localhost:8001/api/connect', {
+      const schemaRes = await fetch('http://localhost:8000/api/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(effectiveConfig),
       })
       const schemaJson = await schemaRes.json()
       if (!schemaRes.ok) throw new Error(schemaJson.detail || 'Connection failed after upload')
-      
+
       onConnected(effectiveConfig, schemaJson.schema)
     } catch (err: any) {
       if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
         setBackendStatus('down')
-        setError('BACKEND NOT RUNNING!\n\nPlease ensure your backend is running on port 8001.')
+        setError('BACKEND NOT RUNNING!\n\nPlease ensure your backend is running on port 8000.')
       } else {
         setError(err.message)
       }

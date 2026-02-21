@@ -21,12 +21,17 @@ export interface ChartConfig {
 }
 
 export interface QueryResult {
-  sql: string
-  columns: string[]
-  data: any[]
-  total_rows: number
-  metrics: Metric[]
-  chart: ChartConfig | null
-  insights: string[]
-  suggestions: string[]
+  // v2 fields — always present
+  mode: 'chat' | 'sql' | 'rag' | 'hybrid'
+  answer: string | null
+  // SQL fields — present only in sql/hybrid mode
+  sql_query: string | null
+  columns: string[] | null
+  data: Record<string, any>[] | null
+  total_rows: number | null
+  metrics: Metric[] | null
+  chart_config: ChartConfig | null
+  insights: string[] | null
+  suggestions: string[] | null
 }
+

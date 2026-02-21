@@ -1,15 +1,16 @@
+"""
+Chat & Query Routes — BAAP AI v2
+Thin HTTP adapter. All business logic lives in core/smart_router.py.
+"""
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 
-from ingestion.db_loader import get_connection, get_schema
-from processing.sql_agent import natural_language_to_sql, execute_query
-from intelligence.metrics_engine import generate_metrics
-from intelligence.insight_generator import generate_insights
-from intelligence.suggestion_engine import generate_suggestions
-from visualization.chart_generator import generate_chart_config
+from core.smart_router import route
 
 router = APIRouter()
+
 
 class DBConfig(BaseModel):
     db_type: str
@@ -19,44 +20,34 @@ class DBConfig(BaseModel):
     password: str
     database: str
 
+
 class QueryRequest(BaseModel):
     db_config: DBConfig
     question: str
     sql_override: Optional[str] = None
 
+
 @router.post("/query")
 def run_query(req: QueryRequest):
-    """Full pipeline: NL → SQL → Execute → Metrics → Chart → Insights → Suggestions"""
+    """
+    Unified BAAP AI v2 query endpoint.
+
+    Classifies intent and routes to the appropriate engine:
+      - chat / greeting   → Conversational response
+      - database_query    → NL → SQL → Execute → Metrics → Chart → Insights
+      - document_query    → RAG pipeline (FAISS + Gemini)
+      - hybrid_query      → SQL + RAG merged response
+
+    Response always includes:
+      mode, answer, and conditionally:
+      sql_query, data, metrics, chart_config, insights, suggestions
+    """
     try:
-        # Connect + get schema
-        conn = get_connection(req.db_config.model_dump())
-        schema = get_schema(conn, req.db_config.db_type)
-
-        # NL → SQL via Gemini
-        sql = req.sql_override or natural_language_to_sql(req.question, schema, req.db_config.db_type)
-
-        # Execute SQL
-        columns, rows = execute_query(conn, sql)
-        conn.close()
-
-        data = [dict(zip(columns, row)) for row in rows]
-
-        # Generate all analytics
-        metrics = generate_metrics(columns, data)
-        chart = generate_chart_config(columns, data, req.question)
-        insights = generate_insights(req.question, sql, data, metrics)
-        suggestions = generate_suggestions(req.question, schema, data)
-
-        return {
-            "sql": sql,
-            "columns": columns,
-            "data": data[:500],
-            "total_rows": len(data),
-            "metrics": metrics,
-            "chart": chart,
-            "insights": insights,
-            "suggestions": suggestions,
-        }
-
+        result = route(
+            question=req.question,
+            db_config=req.db_config.model_dump(),
+            sql_override=req.sql_override,
+        )
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

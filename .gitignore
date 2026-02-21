@@ -1,10 +1,48 @@
+# ===========================
+# Python / Backend
+# ===========================
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Environment variables — NEVER commit these
 backend/.env
-backend/venv/
-backend/__pycache__/
+.env
+*.env
+
+# Database files (local SQLite)
+*.db
+*.sqlite
+*.sqlite3
+
+# RAG FAISS store (large binary files, rebuilt on startup)
+backend/rag_store/
+
+# Test scripts
+backend/test_v2.py
+
+# ===========================
+# Node / Frontend
+# ===========================
+node_modules/
 frontend/node_modules/
 frontend/.next/
 frontend/out/
-.DS_Store
-.idea/
+frontend/build/
+frontend/.env.local
+frontend/.env.production
+
+# ===========================
+# IDEs & OS
+# ===========================
 .vscode/
-*.db
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

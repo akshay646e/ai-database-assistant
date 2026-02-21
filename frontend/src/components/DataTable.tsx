@@ -2,10 +2,11 @@
 import { useState, useMemo } from 'react'
 
 type Props = {
-  columns: string[]
-  data: Record<string, any>[]
-  totalRows: number
+  columns: string[] | null
+  data: Record<string, any>[] | null
+  totalRows: number | null
 }
+
 
 const PAGE_SIZE = 10
 
@@ -13,19 +14,28 @@ export default function DataTable({ columns, data, totalRows }: Props) {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
 
+  // Guard: data can be null in chat/rag modes
+  const safeData = data ?? []
+  const safeColumns = columns ?? []
+  const safeTotalRows = totalRows ?? 0
+
   const filtered = useMemo(() => {
-    if (!search.trim()) return data
+    if (!search.trim()) return safeData
     const term = search.toLowerCase()
-    return data.filter(row =>
+    return safeData.filter(row =>
       Object.values(row).some(v => String(v ?? '').toLowerCase().includes(term))
     )
-  }, [data, search])
+  }, [safeData, search])
+
+  // Don't render table at all if there's no data
+  if (safeData.length === 0 || safeColumns.length === 0) return null
 
   const pageData = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
 
   const start = page * PAGE_SIZE + 1
   const end = Math.min((page + 1) * PAGE_SIZE, filtered.length)
+
 
   return (
     <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', overflow: 'hidden', marginBottom: 24 }}>
@@ -41,7 +51,7 @@ export default function DataTable({ columns, data, totalRows }: Props) {
             <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
           </svg>
           {start}–{end} of {filtered.length} results
-          {filtered.length < totalRows && <span>(filtered from {totalRows})</span>}
+          {filtered.length < safeTotalRows && <span>(filtered from {safeTotalRows})</span>}
         </div>
       </div>
 
@@ -70,7 +80,7 @@ export default function DataTable({ columns, data, totalRows }: Props) {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: '#f8f9fd' }}>
-              {columns.map(col => (
+              {safeColumns.map(col => (
                 <th key={col} style={{
                   padding: '12px 20px', textAlign: 'left', fontSize: 13,
                   fontWeight: 600, color: '#5a6075', borderBottom: '1px solid #e2e6f0',
@@ -82,7 +92,7 @@ export default function DataTable({ columns, data, totalRows }: Props) {
           <tbody>
             {pageData.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} style={{ padding: '32px', textAlign: 'center', color: '#8b92a9', fontSize: 14 }}>
+                <td colSpan={safeColumns.length} style={{ padding: '32px', textAlign: 'center', color: '#8b92a9', fontSize: 14 }}>
                   No results found
                 </td>
               </tr>
@@ -92,7 +102,7 @@ export default function DataTable({ columns, data, totalRows }: Props) {
                 onMouseOver={e => (e.currentTarget.style.background = '#f8f9fd')}
                 onMouseOut={e => (e.currentTarget.style.background = '')}
               >
-                {columns.map(col => (
+                {safeColumns.map(col => (
                   <td key={col} style={{
                     padding: '12px 20px', fontSize: 14, color: '#1a1d2e',
                     whiteSpace: 'nowrap', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis',

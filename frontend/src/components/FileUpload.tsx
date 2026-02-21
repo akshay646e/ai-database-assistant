@@ -24,17 +24,17 @@ export default function FileUpload({ dbConfig, onUploadSuccess }: Props) {
     formData.append('db_config', JSON.stringify(dbConfig))
 
     try {
-      const res = await fetch('http://localhost:8001/api/upload', {
+      const res = await fetch('http://localhost:8000/api/upload', {
         method: 'POST',
         body: formData,
       })
       const json = await res.json()
-      
+
       if (!res.ok) throw new Error(json.detail || 'Upload failed')
-      
+
       setMessage(`✅ Success! Table: ${json.table}`)
       onUploadSuccess(json.table)
-      
+
       // Clear message after 3 seconds
       setTimeout(() => setMessage(''), 3000)
     } catch (err: any) {
@@ -54,7 +54,7 @@ export default function FileUpload({ dbConfig, onUploadSuccess }: Props) {
         style={{ display: 'none' }}
         accept=".csv,.xlsx,.xls,.pdf,.docx"
       />
-      
+
       <button
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}

@@ -171,7 +171,7 @@ export default function DashboardPage({
           }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12, color: '#6c47ff', fontSize: 15 }}>
               <span style={{ width: 24, height: 24, border: '3px solid #e2e6f0', borderTopColor: '#6c47ff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
-              AI is analyzing your question and generating SQL...
+              BAAP AI is thinking...
             </div>
           </div>
         )}
@@ -179,40 +179,80 @@ export default function DashboardPage({
         {/* Results */}
         {queryResult && !queryLoading && (
           <div ref={resultsRef}>
-            {/* Generated SQL */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1d2e' }}>Generated SQL Query</span>
-            </div>
+
+            {/* Mode badge + AI Answer bubble — always shown */}
             <div style={{
-              background: '#0f1117', borderRadius: 12, padding: '16px 20px',
-              fontFamily: "'JetBrains Mono', monospace", fontSize: 13,
-              color: '#00ff9d', lineHeight: 1.7, overflowX: 'auto', marginBottom: 24,
-              position: 'relative',
+              background: '#fff', borderRadius: 16, padding: '20px 24px',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: 20,
             }}>
-              <CopyBtn text={queryResult.sql} />
-              {queryResult.sql}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: queryResult.answer ? 12 : 0 }}>
+                <div style={{
+                  padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                  letterSpacing: '0.05em', textTransform: 'uppercase' as const,
+                  background:
+                    queryResult.mode === 'sql' ? '#eff6ff' :
+                      queryResult.mode === 'rag' ? '#f0fdf4' :
+                        queryResult.mode === 'hybrid' ? '#faf5ff' : '#f8f9fd',
+                  color:
+                    queryResult.mode === 'sql' ? '#2563eb' :
+                      queryResult.mode === 'rag' ? '#16a34a' :
+                        queryResult.mode === 'hybrid' ? '#7c3aed' : '#6c47ff',
+                }}>
+                  {queryResult.mode === 'sql' ? '🗄 SQL' :
+                    queryResult.mode === 'rag' ? '📄 Document' :
+                      queryResult.mode === 'hybrid' ? '⚡ Hybrid' : '💬 Chat'}
+                </div>
+                <span style={{ fontSize: 13, color: '#8b92a9' }}>BAAP AI Response</span>
+              </div>
+              {queryResult.answer && (
+                <p style={{ fontSize: 14, color: '#1a1d2e', lineHeight: 1.7, margin: 0 }}>
+                  {queryResult.answer}
+                </p>
+              )}
             </div>
 
-            {/* Metrics */}
-            <MetricCards metrics={queryResult.metrics} />
+            {/* Generated SQL — only for sql/hybrid mode */}
+            {queryResult.sql_query && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1d2e' }}>Generated SQL Query</span>
+                </div>
+                <div style={{
+                  background: '#0f1117', borderRadius: 12, padding: '16px 20px',
+                  fontFamily: "'JetBrains Mono', monospace", fontSize: 13,
+                  color: '#00ff9d', lineHeight: 1.7, overflowX: 'auto', marginBottom: 24,
+                  position: 'relative',
+                }}>
+                  <CopyBtn text={queryResult.sql_query} />
+                  {queryResult.sql_query}
+                </div>
+              </>
+            )}
 
-            {/* Data Results */}
-            <DataTable
-              columns={queryResult.columns}
-              data={queryResult.data}
-              totalRows={queryResult.total_rows}
-            />
+            {/* Metrics — only when present */}
+            {queryResult.metrics && <MetricCards metrics={queryResult.metrics} />}
 
-            {/* Chart */}
-            <ChartSection chart={queryResult.chart} />
+            {/* Data Table — only when data is present */}
+            {queryResult.data && queryResult.columns && (
+              <DataTable
+                columns={queryResult.columns}
+                data={queryResult.data}
+                totalRows={queryResult.total_rows ?? 0}
+              />
+            )}
 
-            {/* Insights + Suggestions */}
-            <InsightsSuggestions
-              insights={queryResult.insights}
-              suggestions={queryResult.suggestions}
-              onSuggestionClick={handleSuggestionClick}
-            />
+            {/* Chart — only when chart_config is present */}
+            {queryResult.chart_config && <ChartSection chart={queryResult.chart_config} />}
+
+            {/* Insights + Suggestions — only when present */}
+            {(queryResult.insights || queryResult.suggestions) && (
+              <InsightsSuggestions
+                insights={queryResult.insights ?? []}
+                suggestions={queryResult.suggestions ?? []}
+                onSuggestionClick={handleSuggestionClick}
+              />
+            )}
           </div>
         )}
 

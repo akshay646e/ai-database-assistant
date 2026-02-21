@@ -7,7 +7,7 @@ import DashboardPage from '@/components/DashboardPage'
 export default function Home() {
   const [config, setConfig] = useState<DBConfig | null>(null)
   const [schema, setSchema] = useState<any>(null)
-  
+
   // Query state
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null)
   const [queryLoading, setQueryLoading] = useState(false)
@@ -28,7 +28,7 @@ export default function Home() {
   const refreshSchema = async () => {
     if (!config) return
     try {
-      const res = await fetch('http://localhost:8001/api/schema', {
+      const res = await fetch('http://localhost:8000/api/schema', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
@@ -47,7 +47,7 @@ export default function Home() {
     setQueryResult(null)
 
     try {
-      const res = await fetch('http://localhost:8001/api/query', {
+      const res = await fetch('http://localhost:8000/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -81,7 +81,7 @@ export default function Home() {
       onRefreshSchema={refreshSchema}
     />
   )
-} 
+}
 
 
 

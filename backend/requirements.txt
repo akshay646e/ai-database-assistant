@@ -10,5 +10,7 @@ openpyxl
 python-docx
 pypdf
 python-multipart
+faiss-cpu
+sentence-transformers
 
 sqlalchemy
