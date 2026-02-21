@@ -93,7 +93,10 @@ def upload_file(
             cursor.execute(create_table_sql)
             
             # Insert document
-            insert_sql = "INSERT INTO uploaded_documents (filename, content_text) VALUES (%s, %s)"
+            if db_config['db_type'] == 'sqlite':
+                insert_sql = "INSERT INTO uploaded_documents (filename, content_text) VALUES (?, ?)"
+            else:
+                insert_sql = "INSERT INTO uploaded_documents (filename, content_text) VALUES (%s, %s)"
             cursor.execute(insert_sql, (filename, text_content))
             conn.commit()
             conn.close()
