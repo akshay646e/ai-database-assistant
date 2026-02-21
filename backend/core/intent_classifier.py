@@ -42,6 +42,9 @@ _DB_KEYWORDS = {
     "customer", "customers", "order", "orders", "product", "products",
     "invoice", "transaction", "transactions", "aggregate", "filter",
     "show me", "list all", "how many", "fetch", "retrieve", "get all",
+    "data", "dataset", "percentage", "percent", "score", "scores",
+    "what is", "what are", "find", "number of", "rate", "ratio",
+    "metrics", "kpi", "performance", "distribution", "analysis",
 }
 
 _DOC_KEYWORDS = {

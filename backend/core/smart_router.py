@@ -155,11 +155,14 @@ def route(
         resp = _empty_response("sql")
         try:
             sql_result = _run_sql_pipeline(question, db_config, sql_override)
-            resp["answer"] = (
-                sql_result["insights"][0]
-                if sql_result.get("insights")
-                else f"Query executed successfully. {sql_result['total_rows']} rows returned."
-            )
+            if sql_result.get("insights"):
+                primary_insight = sql_result["insights"][0]
+                if "API rate limit" in primary_insight:
+                    resp["answer"] = f"Query executed successfully and dashboard updated below! (Note: {primary_insight})"
+                else:
+                    resp["answer"] = primary_insight
+            else:
+                resp["answer"] = f"Query executed successfully. {sql_result['total_rows']} rows returned."
             resp["sql_query"] = sql_result["sql"]
             resp["columns"] = sql_result["columns"]
             resp["data"] = sql_result["data"]
