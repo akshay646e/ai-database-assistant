@@ -16,8 +16,46 @@ def load_csv_excel(file: UploadFile, db_config: dict, conn) -> dict:
         else:
             df = pd.read_excel(io.BytesIO(content))
         
-        # Sanitize column names
-        df.columns = [c.strip().replace(' ', '_').lower() for c in df.columns]
+        # Drop completely empty rows and columns
+        df.dropna(how='all', inplace=True)
+        df.dropna(axis=1, how='all', inplace=True)
+        
+        # Sanitize column names: Handle Unnamed, replace non-alphanumeric, truncate to 60 chars
+        import re
+        new_columns = []
+        seen = set()
+        for i, col in enumerate(df.columns):
+            col_str = str(col)
+            if col_str.startswith('Unnamed:'):
+                new_col = f"col_{i}"
+            else:
+                new_col = "".join(c if c.isalnum() else "_" for c in col_str)
+                new_col = re.sub(r'_+', '_', new_col).strip('_').lower()
+                new_col = new_col[:60] # MySQL limit is 64
+                if not new_col:
+                    new_col = f"col_{i}"
+            
+            # Prevent duplicate column names
+            base_col = new_col
+            counter = 1
+            while new_col in seen:
+                suffix = f"_{counter}"
+                new_col = base_col[:60 - len(suffix)] + suffix
+                counter += 1
+            seen.add(new_col)
+            new_columns.append(new_col)
+            
+        df.columns = new_columns
+        
+        # To make it cleaner for the frontend, we can fill missing values
+        # For object (string) columns, use '' instead of NaN to avoid literal "null" everywhere
+        for col in df.columns:
+            if df[col].dtype == 'object':
+                df[col] = df[col].fillna('')
+            else:
+                # For numeric columns, NaNs remain as NULL
+                pass
+                
         table_name = sanitize_table_name(filename)
         
         engine_url = get_db_url(db_config)
