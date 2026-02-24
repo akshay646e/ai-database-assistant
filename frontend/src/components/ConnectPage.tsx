@@ -160,29 +160,6 @@ export default function ConnectPage({ onConnected }: Props) {
         }}>
           {backendStatus === 'ok' ? '✅ Backend is running!' : backendStatus === 'down' ? '❌ Backend not found' : '🔍 Check if backend is running'}
         </button>
-
-        <button onClick={() => fileInputRef.current?.click()} disabled={uploading || loading} style={{
-          padding: '7px 18px', borderRadius: 8, cursor: uploading || loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
-          fontSize: 13, display: 'flex', alignItems: 'center', gap: 7,
-          border: '1.5px solid #22c55e', background: '#f0fdf4', color: '#16a34a',
-          fontWeight: 600, opacity: (uploading || loading) ? 0.7 : 1, transition: 'all 0.2s'
-        }}>
-          {uploading ? (
-            <>
-              <span style={{ width: 14, height: 14, border: '2px solid rgba(22,163,74,0.3)', borderTopColor: '#16a34a', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
-              Uploading...
-            </>
-          ) : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-              Upload CSV / Excel
-            </>
-          )}
-        </button>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', padding: '0 20px 40px' }}>
