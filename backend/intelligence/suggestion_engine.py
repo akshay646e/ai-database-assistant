@@ -41,7 +41,6 @@ JSON ARRAY:"""
         if match:
             return json.loads(match.group())[:5]
         return [l.strip().lstrip("-•0123456789. ") for l in text.split("\n") if l.strip()][:5]
-    except Exception as e:
-        if "429" in str(e) or "exhausted" in str(e).lower():
-            return ["API rate limit reached. Suggestion generation skipped."]
+    except Exception:
+        # If we hit a rate limit or any other generation error, just skip suggestions silently
         return []

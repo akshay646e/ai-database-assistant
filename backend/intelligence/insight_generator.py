@@ -45,7 +45,6 @@ JSON ARRAY:"""
             return json.loads(match.group())[:5]
         # fallback: split lines
         return [l.strip().lstrip("-•0123456789. ") for l in text.split("\n") if l.strip()][:5]
-    except Exception as e:
-        if "429" in str(e) or "exhausted" in str(e).lower():
-            return ["API rate limit reached. Please wait a few moments before requesting more insights."]
-        return [f"Could not generate insights: {e}"]
+    except Exception:
+        # If we hit a rate limit or any other generation error, just skip insights silently
+        return []

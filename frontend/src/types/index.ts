@@ -35,3 +35,11 @@ export interface QueryResult {
   suggestions: string[] | null
 }
 
+export interface Message {
+  id: string
+  role: 'user' | 'assistant'
+  content?: string
+  queryResult?: QueryResult
+  isError?: boolean
+  errorText?: string
+}

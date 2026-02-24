@@ -8,10 +8,7 @@ export default function Home() {
   const [config, setConfig] = useState<DBConfig | null>(null)
   const [schema, setSchema] = useState<any>(null)
 
-  // Query state
-  const [queryResult, setQueryResult] = useState<QueryResult | null>(null)
-  const [queryLoading, setQueryLoading] = useState(false)
-  const [queryError, setQueryError] = useState('')
+  // State managed by DashboardPage now for continuous chat
 
   const handleConnected = (cfg: DBConfig, s: any) => {
     setConfig(cfg)
@@ -21,8 +18,6 @@ export default function Home() {
   const handleDisconnect = () => {
     setConfig(null)
     setSchema(null)
-    setQueryResult(null)
-    setQueryError('')
   }
 
   const refreshSchema = async () => {
@@ -41,28 +36,19 @@ export default function Home() {
   }
 
   const handleQuery = async (question: string) => {
-    if (!config) return
-    setQueryLoading(true)
-    setQueryError('')
-    setQueryResult(null)
+    if (!config) throw new Error("No config");
 
-    try {
-      const res = await fetch('http://localhost:8000/api/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          db_config: config,
-          question
-        })
+    const res = await fetch('http://localhost:8000/api/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        db_config: config,
+        question
       })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.detail || 'Query failed')
-      setQueryResult(json)
-    } catch (e: any) {
-      setQueryError(e.message)
-    } finally {
-      setQueryLoading(false)
-    }
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.detail || 'Query failed')
+    return json;
   }
 
   if (!config) {
@@ -73,9 +59,6 @@ export default function Home() {
     <DashboardPage
       dbConfig={config}
       schema={schema}
-      queryResult={queryResult}
-      queryLoading={queryLoading}
-      queryError={queryError}
       onQuery={handleQuery}
       onDisconnect={handleDisconnect}
       onRefreshSchema={refreshSchema}

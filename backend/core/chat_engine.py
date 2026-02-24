@@ -64,8 +64,9 @@ BAAP AI:"""
         if "429" in error_str or "exhausted" in error_str.lower():
             logger.warning("Chat engine hit rate limit: %s", error_str)
             return (
-                "I'm receiving too many requests right now. "
-                "Please wait a moment and try again."
+                "API Rate Limit Exceeded (HTTP 429). "
+                "The system is making too many requests to the AI model. "
+                "If you are using a free-tier API key, please wait a minute before sending your next message."
             )
         logger.error("Chat engine error: %s", error_str)
         return f"I encountered an error processing your message. Please try again."
