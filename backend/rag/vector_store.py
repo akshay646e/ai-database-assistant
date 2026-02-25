@@ -120,13 +120,14 @@ def add_chunks(chunks: List[Dict], embeddings: np.ndarray) -> int:
         return len(_chunks)
 
 
-def search(query_embedding: np.ndarray, top_k: int = 3) -> List[Dict[str, Any]]:
+def search(query_embedding: np.ndarray, top_k: int = 3, document_filter: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Retrieve the top-K most similar chunks for a query embedding.
 
     Args:
         query_embedding: numpy float32 array, shape (1, dim).
         top_k:           Number of results to return.
+        document_filter: Optional filename to restrict search to.
 
     Returns:
         List of result dicts:
@@ -142,16 +143,28 @@ def search(query_embedding: np.ndarray, top_k: int = 3) -> List[Dict[str, Any]]:
         logger.warning("Search called on empty vector store.")
         return []
 
-    actual_k = min(top_k, len(_chunks))
-    scores, indices = _index.search(query_embedding, actual_k)
+    # If filtering, we must search all chunks since FAISS IndexFlatIP
+    # does not natively support pre-filtering metadata in this basic version.
+    search_k = len(_chunks) if document_filter else min(top_k, len(_chunks))
+    scores, indices = _index.search(query_embedding, search_k)
 
     results = []
     for score, idx in zip(scores[0], indices[0]):
         if idx < 0 or idx >= len(_chunks):
             continue
+            
         chunk = _chunks[idx].copy()
+        
+        # Apply document filter if provided
+        if document_filter and chunk.get("filename") != document_filter:
+            continue
+            
         chunk["score"] = float(score)
         results.append(chunk)
+
+        # Stop if we have enough filtered results
+        if len(results) >= top_k:
+            break
 
     return results
 

@@ -76,19 +76,20 @@ def index_document(filename: str, file_bytes: bytes) -> Dict[str, Any]:
 
 # ── Retrieval + Generation ────────────────────────────────────────────────────
 
-def answer_question(question: str) -> Dict[str, Any]:
+def answer_question(question: str, document_filter: Optional[str] = None) -> Dict[str, Any]:
     """
     Answer a document-related question using RAG.
 
     Pipeline:
         1. Embed the question
-        2. Retrieve top-K relevant chunks from FAISS
+        2. Retrieve top-K relevant chunks from FAISS (with optional document filter)
         3. Build context from retrieved chunks
         4. Call Gemini with context + question
         5. Return structured response
 
     Args:
         question: The user's natural language question.
+        document_filter: Optional filename to restrict search to.
 
     Returns:
         {
@@ -113,7 +114,11 @@ def answer_question(question: str) -> Dict[str, Any]:
     query_embedding = embedding_engine.embed_query(question)
 
     # 3. Retrieve
-    results = vector_store.search(query_embedding, top_k=TOP_K)
+    results = vector_store.search(
+        query_embedding, 
+        top_k=TOP_K, 
+        document_filter=document_filter
+    )
     if not results:
         return {
             "answer": (
@@ -210,7 +215,7 @@ def _call_llm(prompt: str) -> str:
 
 # ── Hybrid Support ────────────────────────────────────────────────────────────
 
-def answer_hybrid(question: str, sql_data_summary: str) -> str:
+def answer_hybrid(question: str, sql_data_summary: str, document_filter: Optional[str] = None) -> str:
     """
     Retrieve doc context and merge with SQL summary via Gemini.
     Used by smart_router for hybrid_query intent.
@@ -218,6 +223,7 @@ def answer_hybrid(question: str, sql_data_summary: str) -> str:
     Args:
         question:         User's question.
         sql_data_summary: Plain-text summary of SQL result (NOT raw data).
+        document_filter:  Optional filename to restrict RAG search to.
 
     Returns:
         Merged natural language answer string.
@@ -228,7 +234,11 @@ def answer_hybrid(question: str, sql_data_summary: str) -> str:
         return sql_data_summary
 
     query_embedding = embedding_engine.embed_query(question)
-    results = vector_store.search(query_embedding, top_k=TOP_K)
+    results = vector_store.search(
+        query_embedding, 
+        top_k=TOP_K, 
+        document_filter=document_filter
+    )
 
     if not results:
         return sql_data_summary

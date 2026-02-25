@@ -7,6 +7,9 @@ type Props = {
   onUploadSuccess: (tableName: string) => void
 }
 
+// Let Next.js rewrite the API requests
+const API_URL = ''
+
 export default function FileUpload({ dbConfig, onUploadSuccess }: Props) {
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState('')
@@ -24,8 +27,9 @@ export default function FileUpload({ dbConfig, onUploadSuccess }: Props) {
     formData.append('db_config', JSON.stringify(dbConfig))
 
     try {
-      const res = await fetch('http://localhost:8000/api/upload', {
+      const res = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
+        headers: { 'ngrok-skip-browser-warning': 'true' },
         body: formData,
       })
       const json = await res.json()

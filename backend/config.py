@@ -3,7 +3,8 @@ from dotenv import load_dotenv
 
 def load_environment():
     """Loads environment variables from .env file"""
-    load_dotenv()
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    load_dotenv(dotenv_path=env_path)
 
 def get_db_url(db_config: dict) -> str:
     """Helper to construct SQL Alchemy DB URL from config"""

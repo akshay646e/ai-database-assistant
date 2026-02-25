@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { DBConfig, QueryResult, Message } from '@/types'
 import FileUpload from './FileUpload'
 import MetricCards from './MetricCards'
@@ -10,7 +10,7 @@ import InsightsSuggestions from './InsightsSuggestions'
 type Props = {
   dbConfig: DBConfig
   schema: any
-  onQuery: (q: string) => Promise<any>
+  onQuery: (q: string, context?: string) => Promise<any>
   onDisconnect: () => void
   onRefreshSchema: () => void
 }
@@ -21,7 +21,19 @@ export default function DashboardPage({
   const [question, setQuestion] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [queryLoading, setQueryLoading] = useState(false)
+  const [chatContext, setChatContext] = useState<string>('all')
+  const [documents, setDocuments] = useState<string[]>([])
   const resultsRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Fetch available documents on load
+    fetch('/api/documents')
+      .then(res => res.json())
+      .then(data => {
+        if (data.documents) setDocuments(data.documents)
+      })
+      .catch(err => console.error("Failed to fetch documents", err))
+  }, [])
 
   const handleExecute = async (overrideQuestion?: string) => {
     const q = overrideQuestion || question.trim()
@@ -35,7 +47,7 @@ export default function DashboardPage({
     setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
 
     try {
-      const result = await onQuery(q)
+      const result = await onQuery(q, chatContext)
       const assistantMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', queryResult: result }
       setMessages(prev => [...prev, assistantMsg])
     } catch (e: any) {
@@ -260,12 +272,45 @@ export default function DashboardPage({
             background: '#fff', borderRadius: 16, padding: '20px',
             boxShadow: '0 -4px 24px rgba(0,0,0,0.04)', border: '1px solid #e2e6f0'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: '#1a1d2e', marginBottom: 12 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="#6c47ff" stroke="#6c47ff" strokeWidth="1">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-              AI Query Assistant
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: '#1a1d2e' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#6c47ff" stroke="#6c47ff" strokeWidth="1">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                AI Query Assistant
+              </div>
+              
+              {/* Chat Context Selector */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 500, color: '#8b92a9' }}>Chat Context:</span>
+                <select
+                  value={chatContext}
+                  onChange={e => setChatContext(e.target.value)}
+                  style={{
+                    padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500,
+                    background: chatContext === 'all' ? '#f8f9fd' : '#eee8ff',
+                    color: chatContext === 'all' ? '#1a1d2e' : '#6c47ff',
+                    border: `1px solid ${chatContext === 'all' ? '#e2e6f0' : '#d2c4ff'}`,
+                    outline: 'none', cursor: 'pointer', fontFamily: 'inherit'
+                  }}
+                >
+                  <option value="all">🌐 Everything (Global Brain)</option>
+                  
+                  {documents.length > 0 && <optgroup label="Uploaded Documents">
+                    {documents.map(doc => (
+                      <option key={`doc:${doc}`} value={`doc:${doc}`}>📄 {doc}</option>
+                    ))}
+                  </optgroup>}
+
+                  {Object.keys(schema).length > 0 && <optgroup label="Database Tables">
+                    {Object.keys(schema).map(table => (
+                      <option key={`table:${table}`} value={`table:${table}`}>🗄️ {table}</option>
+                    ))}
+                  </optgroup>}
+                </select>
+              </div>
             </div>
+
             <textarea
               value={question}
               onChange={e => setQuestion(e.target.value)}

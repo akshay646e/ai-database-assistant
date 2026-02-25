@@ -4,6 +4,9 @@ import type { DBConfig, QueryResult } from '@/types'
 import ConnectPage from '@/components/ConnectPage'
 import DashboardPage from '@/components/DashboardPage'
 
+// Let Next.js rewrite the API requests instead of changing it dynamically
+const API_URL = ''
+
 export default function Home() {
   const [config, setConfig] = useState<DBConfig | null>(null)
   const [schema, setSchema] = useState<any>(null)
@@ -23,9 +26,9 @@ export default function Home() {
   const refreshSchema = async () => {
     if (!config) return
     try {
-      const res = await fetch('http://localhost:8000/api/schema', {
+      const res = await fetch(`${API_URL}/api/schema`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
         body: JSON.stringify(config),
       })
       const json = await res.json()
@@ -35,16 +38,21 @@ export default function Home() {
     }
   }
 
-  const handleQuery = async (question: string) => {
+  const handleQuery = async (question: string, chatContext?: string) => {
     if (!config) throw new Error("No config");
 
-    const res = await fetch('http://localhost:8000/api/query', {
+    const payload: any = {
+      db_config: config,
+      question
+    }
+    if (chatContext && chatContext !== 'all') {
+      payload.chat_context = chatContext;
+    }
+
+    const res = await fetch(`${API_URL}/api/query`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        db_config: config,
-        question
-      })
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+      body: JSON.stringify(payload)
     })
     const json = await res.json()
     if (!res.ok) throw new Error(json.detail || 'Query failed')

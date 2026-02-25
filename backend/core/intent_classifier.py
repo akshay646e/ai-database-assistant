@@ -36,23 +36,25 @@ _GREETING_PATTERNS = re.compile(
 _DB_KEYWORDS = {
     "table", "tables", "column", "columns", "row", "rows", "database", "db",
     "query", "sql", "select", "count", "sum", "average", "avg", "total",
-    "maximum", "minimum", "max", "min", "group by", "order by", "where",
+    "maximum", "minimum", "max", "min", "group by", "order by",
     "join", "schema", "record", "records", "field", "fields", "entry",
     "entries", "revenue", "sales", "profit", "employee", "employees",
     "customer", "customers", "order", "orders", "product", "products",
     "invoice", "transaction", "transactions", "aggregate", "filter",
     "show me", "list all", "how many", "fetch", "retrieve", "get all",
-    "data", "dataset", "percentage", "percent", "score", "scores",
-    "what is", "what are", "find", "number of", "rate", "ratio",
+    "data", "dataset", "percentage", "percent",
     "metrics", "kpi", "performance", "distribution", "analysis",
 }
 
 _DOC_KEYWORDS = {
     "document", "documents", "file", "files", "pdf", "docx", "report",
     "uploaded", "text", "paragraph", "page", "pages", "summary", "summarize",
-    "what does", "what did", "according to", "the document", "the report",
+    "according to", "the document", "the report",
     "the file", "mention", "mentions", "stated", "states", "content",
     "section", "chapters", "article", "clause", "contract", "policy",
+    "resume", "cv", "experience", "education", "university", "graduated",
+    "graduation", "student", "skill", "skills", "certificate", "certification",
+    "letter", "essay", "from my", "in the",
 }
 
 _ANALYTICS_KEYWORDS = {

@@ -61,6 +61,7 @@ def _run_sql_pipeline(
     question: str,
     db_config: Dict[str, Any],
     sql_override: Optional[str] = None,
+    table_filter: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Full SQL analytics pipeline.
@@ -70,7 +71,13 @@ def _run_sql_pipeline(
     conn = get_connection(db_config)
     schema = get_schema(conn, db_config["db_type"])
 
-    sql = sql_override or natural_language_to_sql(question, schema, db_config["db_type"])
+    # If a table filter is applied, we only pass that specific table's schema 
+    # to the AI so it doesn't get confused by other tables.
+    filtered_schema = schema
+    if table_filter and table_filter in schema:
+        filtered_schema = {table_filter: schema[table_filter]}
+
+    sql = sql_override or natural_language_to_sql(question, filtered_schema, db_config["db_type"])
     columns, rows = execute_query(conn, sql)
     conn.close()
 
@@ -109,6 +116,7 @@ def route(
     question: str,
     db_config: Dict[str, Any],
     sql_override: Optional[str] = None,
+    chat_context: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Main routing function. Classifies intent and dispatches to engine(s).
@@ -117,12 +125,29 @@ def route(
         question:     User's natural language question.
         db_config:    Database connection config dict.
         sql_override: Optional raw SQL to bypass NL→SQL step.
+        chat_context: Optional context string e.g. "doc:file.pdf" or "table:sales"
 
     Returns:
         Unified v2 response dict.
     """
+    # ── Context override ──────────────────────────────────────────────────────
+    document_filter = None
+    table_filter = None
+
     intent = classify_intent(question)
-    logger.info("Routing question with intent='%s': %s", intent, question[:80])
+    logger.info("Initial classified intent='%s': %s", intent, question[:80])
+
+    if chat_context and chat_context != "all":
+        # Do not override conversational intents
+        if intent not in ("greeting", "general_chat"):
+            if chat_context.startswith("doc:"):
+                intent = "document_query"
+                document_filter = chat_context.replace("doc:", "")
+                logger.info("Context forced intent to 'document_query' for %s", document_filter)
+            elif chat_context.startswith("table:"):
+                intent = "database_query"
+                table_filter = chat_context.replace("table:", "")
+                logger.info("Context forced intent to 'database_query' for %s", table_filter)
 
     # ── Greeting ──────────────────────────────────────────────────────────────
     if intent == "greeting":
@@ -140,7 +165,7 @@ def route(
     if intent == "document_query":
         resp = _empty_response("rag")
         try:
-            rag_result = rag_engine.answer_question(question)
+            rag_result = rag_engine.answer_question(question, document_filter=document_filter)
             resp["answer"] = rag_result["answer"]
             # Store sources as part of the insights field (repurposed for RAG)
             if rag_result.get("sources"):
@@ -154,7 +179,7 @@ def route(
     if intent in ("database_query", "analytics_query"):
         resp = _empty_response("sql")
         try:
-            sql_result = _run_sql_pipeline(question, db_config, sql_override)
+            sql_result = _run_sql_pipeline(question, db_config, sql_override, table_filter)
             if sql_result.get("insights"):
                 primary_insight = sql_result["insights"][0]
                 if "API rate limit" in primary_insight:
@@ -184,7 +209,7 @@ def route(
 
         # Run SQL first
         try:
-            sql_result = _run_sql_pipeline(question, db_config, sql_override)
+            sql_result = _run_sql_pipeline(question, db_config, sql_override, table_filter)
             resp["sql_query"] = sql_result["sql"]
             resp["columns"] = sql_result["columns"]
             resp["data"] = sql_result["data"]
@@ -200,7 +225,7 @@ def route(
         # Run RAG + merge
         try:
             sql_summary = sql_result["_sql_summary"] if sql_result else f"SQL failed: {sql_error}"
-            merged_answer = rag_engine.answer_hybrid(question, sql_summary)
+            merged_answer = rag_engine.answer_hybrid(question, sql_summary, document_filter=document_filter)
             resp["answer"] = merged_answer
         except Exception as e:
             logger.error("Hybrid RAG step failed: %s", e)

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from core.smart_router import route
+from rag.vector_store import get_store_stats
 
 router = APIRouter()
 
@@ -25,6 +26,16 @@ class QueryRequest(BaseModel):
     db_config: DBConfig
     question: str
     sql_override: Optional[str] = None
+    chat_context: Optional[str] = None
+
+@router.get("/documents")
+def list_documents():
+    """Returns a list of all currently indexed documents in the RAG store."""
+    try:
+        stats = get_store_stats()
+        return {"documents": stats.get("documents", [])}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/query")
@@ -47,7 +58,13 @@ def run_query(req: QueryRequest):
             question=req.question,
             db_config=req.db_config.model_dump(),
             sql_override=req.sql_override,
+            chat_context=req.chat_context,
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = str(e)
+        if "429" in error_msg or "Resource exhausted" in error_msg:
+            friendly_msg = "Google Gemini Free-Tier limit reached. The AI requires a short cooldown. Please wait 1 minute and try your question again!"
+            raise HTTPException(status_code=500, detail=friendly_msg)
+            
+        raise HTTPException(status_code=500, detail=error_msg)

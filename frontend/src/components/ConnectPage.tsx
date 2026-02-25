@@ -7,6 +7,9 @@ type Props = {
   onConnected: (config: DBConfig, schema: any) => void
 }
 
+// Let Next.js rewrite the API requests
+const API_URL = ''
+
 export default function ConnectPage({ onConnected }: Props) {
   const [form, setForm] = useState<DBConfig>({
     db_type: 'mysql',
@@ -33,7 +36,9 @@ export default function ConnectPage({ onConnected }: Props) {
 
   const checkBackend = async () => {
     try {
-      const res = await fetch('http://localhost:8000/')
+      const res = await fetch(`${API_URL}/backend-root`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      })
       if (res.ok) { setBackendStatus('ok'); setError('') }
       else setBackendStatus('down')
     } catch {
@@ -47,9 +52,9 @@ export default function ConnectPage({ onConnected }: Props) {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('http://localhost:8000/api/connect', {
+      const res = await fetch(`${API_URL}/api/connect`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
         body: JSON.stringify(form),
       })
       const json = await res.json()
@@ -88,8 +93,9 @@ export default function ConnectPage({ onConnected }: Props) {
     formData.append('db_config', JSON.stringify(effectiveConfig))
 
     try {
-      const res = await fetch('http://localhost:8000/api/upload', {
+      const res = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
+        headers: { 'ngrok-skip-browser-warning': 'true' },
         body: formData,
       })
       const json = await res.json()
@@ -101,9 +107,9 @@ export default function ConnectPage({ onConnected }: Props) {
       await new Promise(r => setTimeout(r, 1500));
 
       // After upload, connect to the DB to fetch the updated schema
-      const schemaRes = await fetch('http://localhost:8000/api/connect', {
+      const schemaRes = await fetch(`${API_URL}/api/connect`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
         body: JSON.stringify(effectiveConfig),
       })
       const schemaJson = await schemaRes.json()
